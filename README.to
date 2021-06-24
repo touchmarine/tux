@@ -1,0 +1,27 @@
+= Tux
+
+Tux is a declarative, progressive, and orthogonal router schema.
+It makes it easy to structure your app by simply describing the handlers.
+Muxers can utilize Tux by providing a simple adapter with http.ServeMux adapter being already included.
+An adapter enables the muxer to use the Tux schema.
+
+== Example
+
+``
+Group{"", []Entry{
+	Handle{"", listFiles, []Option{Name("all"), Method("GET")}},
+	Handle{"new", new, []Option{Name("new")}},
+
+	Group{"browse", []Entry{
+		Argument{"filename", Handle{"", fileEntrypoint, []Option{Name("render")}}, nil},
+	}, nil},
+
+	Group{"view", []Entry{
+		Argument{
+			"format",
+			Argument{"filename", Handle{"", render, []Option{Name("render")}}, nil},
+			[]Option{Match("alphanumeric")},
+		},
+	}, nil},
+}, nil}
+``
