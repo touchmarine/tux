@@ -8,18 +8,18 @@ An adapter enables the muxer to use the Tux schema.
 == Example
 
 ``
-Group{"", []Entry{
-	Handle{"", listFiles, []Option{Name("all"), Method("GET")}},
-	Handle{"new", new, []Option{Name("new")}},
+&Group{"", []Entry{
+	&Handle{"", listFiles, []Option{Name("all"), Method("GET")}},
+	&Handle{"new", new, []Option{Name("new")}},
 
-	Group{"browse", []Entry{
-		Argument{"filename", Handle{"", fileEntrypoint, []Option{Name("render")}}, nil},
+	&Group{"browse", []Entry{
+		&Argument{"filename", &Handle{"", fileEntrypoint, []Option{Name("render")}}, nil},
 	}, nil},
 
-	Group{"view", []Entry{
-		Argument{
+	&Group{"view", []Entry{
+		&Argument{
 			"format",
-			Argument{"filename", Handle{"", render, []Option{Name("render")}}, nil},
+			&Argument{"filename", &Handle{"", render, []Option{Name("render")}}, nil},
 			[]Option{Match("alphanumeric")},
 		},
 	}, nil},

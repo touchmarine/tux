@@ -8,6 +8,19 @@ import (
 
 func main() {
 	group := &tux.Group{"", []tux.Entry{
+		&tux.Handle{"", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("root"))
+		}), nil},
+
+		// catch-all
+		&tux.Argument{
+			"path",
+			&tux.Handle{"", tux.ArgumentsHandlerFunc(func(w http.ResponseWriter, r *http.Request, args map[string]string) {
+				w.Write([]byte("catch-all; path=" + args["path"]))
+			}), nil},
+			nil,
+		},
+
 		&tux.Handle{"a", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("a"))
 		}), nil},

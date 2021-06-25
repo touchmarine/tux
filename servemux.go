@@ -119,7 +119,27 @@ func cleanPath(p string) string {
 
 func (t *ServeMuxTux) handle(parentPattern string, handle *Handle) {
 	pattern := parentPattern + handle.Path
-	t.m[pattern] = handle.Handler
+	handler := handle.Handler
+
+	if pattern == "/" {
+		// catch-all pattern in servemux
+		handler = notFoundCatchAll(handler)
+	}
+
+	t.m[pattern] = handler
+}
+
+// notFoundCatchAll responds with not found for all but the root path.
+// The "/" pattern in ServeMux matches everything, this undoes that.
+func notFoundCatchAll(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+
+		handler.ServeHTTP(w, r)
+	})
 }
 
 func (t *ServeMuxTux) Next() bool {
