@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestTux(t *testing.T) {
+func TestServeMux(t *testing.T) {
 	cases := []struct {
 		name string
 		say  string
@@ -42,7 +42,6 @@ func TestTux(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func makeSayHandler(say string) http.Handler {

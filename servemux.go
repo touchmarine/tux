@@ -51,14 +51,15 @@ func (t *ServeMuxTux) group(parentPattern string, group *Group) {
 		switch c := child.(type) {
 		case *Group:
 			t.group(pattern, c)
-		case *Argument:
-			t.argument(pattern, c)
-		case *Handle:
-			t.handle(pattern, c)
 		case Group:
 			log.Fatal("expected pointer to Group")
+		case *Argument:
+			args := make(map[string]string)
+			t.m[pattern] = t.argument(args, pattern, child)
 		case Argument:
 			log.Fatal("expected pointer to Argument")
+		case *Handle:
+			t.handle(pattern, c)
 		case Handle:
 			log.Fatal("expected pointer to Handle")
 		default:
@@ -67,32 +68,66 @@ func (t *ServeMuxTux) group(parentPattern string, group *Group) {
 	}
 }
 
-func (t *ServeMuxTux) argument(parentPattern string, argument *Argument) {
-	switch c := argument.Child.(type) {
-	case *Handle:
-		pattern := parentPattern + c.Path
-		t.m[pattern] = matchGreedy(argument.Name, parentPattern, c.Handler)
-	case Handle:
-		log.Fatal("expected pointer to Handle")
-	default:
-		panic(fmt.Sprintf("tux: unexpected entry type %T", argument.Child))
-	}
-}
-
-func matchGreedy(name, parentPattern string, handler http.Handler) http.Handler {
+func (t *ServeMuxTux) argument(args map[string]string, parentPattern string, entry Entry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch h := handler.(type) {
-		case ArgumentsHandler:
-			args := make(map[string]string)
+		path := cleanPath(r.URL.Path)
+		parent := cleanPath(parentPattern)
 
-			p := strings.TrimPrefix(cleanPath(r.URL.Path), cleanPath(parentPattern))
-			args[name] = p
+		switch e := entry.(type) {
+		case *Handle:
+			switch h := e.Handler.(type) {
+			case ArgumentsHandler:
+				h.ServeHTTPWithArguments(w, r, args)
+			default:
+				h.ServeHTTP(w, r)
+			}
 
-			h.ServeHTTPWithArguments(w, r, args)
+			return
+
+		case Handle:
+			log.Fatal("expected pointer to Handle")
+
+		case *Argument:
+			var arg string
+			switch e.Child.(type) {
+			case *Handle:
+				arg = t.greedyArgument(path, parent)
+			default:
+				arg = t.nonGreedyArgument(path, parent)
+			}
+
+			args[e.Name] = arg
+
+			newParent := parent + arg + "/"
+
+			t.argument(args, newParent, e.Child).ServeHTTP(w, r)
+
+		case Argument:
+			log.Fatal("expected pointer to Argument")
+
 		default:
-			handler.ServeHTTP(w, r)
+			panic(fmt.Sprintf("tux: unexpected entry type %T", entry))
 		}
 	})
+}
+
+func (t *ServeMuxTux) greedyArgument(path, parent string) string {
+	p := strings.TrimPrefix(path, parent)
+	if p == path {
+		return ""
+	}
+	return p
+}
+
+func (t *ServeMuxTux) nonGreedyArgument(path, parent string) string {
+	p := t.greedyArgument(path, parent)
+
+	i := strings.Index(p, "/")
+	if i > -1 {
+		return p[:i]
+	}
+
+	return p
 }
 
 // used by ServeMux, copied from net/http/server.go

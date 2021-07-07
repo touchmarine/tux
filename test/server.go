@@ -46,6 +46,16 @@ func main() {
 				nil,
 			},
 		}, nil},
+
+		&tux.Group{"d", []tux.Entry{
+			&tux.Argument{
+				"arg1",
+				&tux.Argument{"arg2", &tux.Handle{"", tux.ArgumentsHandlerFunc(func(w http.ResponseWriter, r *http.Request, args map[string]string) {
+					w.Write([]byte("d/ arg1=" + args["arg1"] + " arg2=" + args["arg2"]))
+				}), nil}, nil},
+				nil,
+			},
+		}, nil},
 	}, nil}
 
 	muxTux := tux.ServeMux(group)
